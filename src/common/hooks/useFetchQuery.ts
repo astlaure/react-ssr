@@ -2,15 +2,20 @@ import { useContext, useEffect, useState } from "react";
 import FetchQueryContext from "../contexts/FetchQueryContext";
 
 export const isSSR = typeof window === 'undefined';
+export const defaultCacheExpiration = 1000 * 60 * 1; // 1 minutes
 
 export default function useFetchQuery<T>(key: string, deps: any[], url: string, options: RequestInit) {
-  const { state, setState } = useContext(FetchQueryContext);
+  const { handleGetData, handleSetData } = useContext(FetchQueryContext);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error|undefined>(undefined);
 
   useEffect(() => {
     if ((window as any).__APP_DATA__[key]) {
       delete (window as any).__APP_DATA__[key];
+      return;
+    }
+
+    if (handleGetData(key).cache > Date.now() - defaultCacheExpiration) {
       return;
     }
 
@@ -24,7 +29,7 @@ export default function useFetchQuery<T>(key: string, deps: any[], url: string, 
       signal: controller.signal,
     })
     .then(response => response.json())
-    .then(json => setState({ ...state, [key]: json }))
+    .then(json => handleSetData(key, json))
     .catch(err => setError(err))
     .then(() => setLoading(false));
 
@@ -33,5 +38,5 @@ export default function useFetchQuery<T>(key: string, deps: any[], url: string, 
     }
   }, deps)
 
-  return { data: state[key] as T, loading, error };
+  return { data: handleGetData(key).data as T, loading, error };
 }
