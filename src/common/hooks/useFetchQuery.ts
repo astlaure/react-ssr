@@ -1,14 +1,12 @@
 import { useContext, useEffect, useState } from "react";
-import SSRContext from "./SSRContext";
+import FetchQueryContext from "../contexts/FetchQueryContext";
 
-export const isSSR = typeof window === 'undefined';
+export const defaultCacheExpiration = 1000 * 60 * 1; // 1 minutes
 
 export default function useFetchQuery<T>(key: string, deps: any[], url: string, options: RequestInit) {
-  const state = useContext(SSRContext);
-  const [data, setData] = useState<T|undefined>(isSSR ? state[key] : (window as any).__APP_DATA__[key]);
-  const [isLoading, setLoading] = useState(!data);
+  const { handleGetData, handleSetData } = useContext(FetchQueryContext);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error|undefined>(undefined);
-  const [hasErrors, setHasErrors] = useState(false);
 
   useEffect(() => {
     if ((window as any).__APP_DATA__[key]) {
@@ -16,23 +14,22 @@ export default function useFetchQuery<T>(key: string, deps: any[], url: string, 
       return;
     }
 
+    if (handleGetData(key).cache > Date.now() - defaultCacheExpiration) {
+      return;
+    }
+
     setLoading(true);
+    setError(undefined);
+
     const controller = new AbortController();
 
     fetch(url, {
       ...options,
       signal: controller.signal,
     })
-    .then(response => {
-      setHasErrors(false);
-      setError(undefined);
-      return response.json();
-    })
-    .then(json => setData(json))
-    .catch(err => {
-      setHasErrors(true);
-      setError(err);
-    })
+    .then(response => response.json())
+    .then(json => handleSetData(key, json))
+    .catch(err => setError(err))
     .then(() => setLoading(false));
 
     return () => {
@@ -40,5 +37,5 @@ export default function useFetchQuery<T>(key: string, deps: any[], url: string, 
     }
   }, deps)
 
-  return { data, isLoading, hasErrors, error };
+  return { data: handleGetData(key).data as T, loading, error };
 }
