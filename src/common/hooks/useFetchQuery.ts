@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import FetchQueryContext from "../contexts/FetchQueryContext";
 
-export const isSSR = typeof window === 'undefined';
 export const defaultCacheExpiration = 1000 * 60 * 1; // 1 minutes
 
 export default function useFetchQuery<T>(key: string, deps: any[], url: string, options: RequestInit) {
