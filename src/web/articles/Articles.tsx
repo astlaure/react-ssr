@@ -1,12 +1,13 @@
 import React from "react";
-import useFetchQuery from "../../common/useFetchQuery";
+import useFetchQuery from "../../common/hooks/useFetchQuery";
+import { Article } from "./models/article";
 
 export default function Articles() {
-  const { data, isLoading, hasErrors } = useFetchQuery<any[]>('articles', [], '/api/articles', { method: 'get' });
+  const { data, loading, error } = useFetchQuery<Article[]>('articles', [], '/api/articles', { method: 'get' });
 
-  if (isLoading) return <h4>...Loading</h4>;
+  if (loading) return <h4>...Loading</h4>;
 
-  if (hasErrors) return <h4>Errors</h4>;
+  if (error) return <h4>Errors</h4>;
 
   return (
     <div>

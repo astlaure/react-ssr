@@ -1,5 +1,5 @@
 import express from 'express';
-import { render } from '../common/SSRUtil';
+import { render } from '../common/utils/server-side.util';
 
 const appRouter = express.Router();
 
